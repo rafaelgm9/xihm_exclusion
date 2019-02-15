@@ -125,37 +125,31 @@ def utconvthetae(r, rt1, mass1, alpha, mass2, conc2, Om):
     r2 = M_to_R(mass2, z=0., mdef='200m')
     rt2 = rt1 / r1 * r2
 
-    # Get ut(r)
-    rm = np.logspace(-3, 1.5, num=100, base=10)
+    # Get enclosed mass
+    rm = np.logspace(-5, 4, num=10000, base=10)
     ut_r = 1. + cluster_toolkit.xi.xi_nfw_at_R(rm, mass2, conc2, Om)
     rho = interp1d(rm, 4 * np.pi * rm ** 2 * rhom * ut_r)
     aux = quad(rho, rm[0], rt2, limit=200, epsrel=1e-3)
     mass2t = aux[0]
-    ut_r *= thetat(rm, rt2, alpha) / mass2t * rhom
-    ut_r_interp = interp1d(rm, ut_r, fill_value=0, bounds_error=False)
 
     # Get thetaet(r)
-    Re = re(rt1, rt2, scheme=1)
-    thetat_r = thetat(rm, Re, alpha)
-    thetat_r_interp = interp1d(rm, thetat_r, fill_value=(1, 0), bounds_error=False)
+    Re = re(rt1, rt2, scheme=2)
 
-    # Double integral
-    integral = np.zeros(np.size(r))
-    u = np.linspace(-1, 1, num=10)
-    g_at_u = np.zeros_like(u)
-    j = 0
-    for ri in r:
-        i = 0
-        for ui in u:
-            def f(y):
-                return y * y * ut_r_interp(y) * thetat_r_interp(np.sqrt(ri * ri + y * y - 2 * ri * y * ui))
+    # Get radial fourier trasnforms
+    k = np.logspace(-2, 4, num=100, base=10)
+    rm_ut = np.logspace(-5, 4, num=10000)
+    rm_thetat = np.linspace(0, 10000, num=100000)
+    ut_r = 1. + cluster_toolkit.xi.xi_nfw_at_R(rm_ut, mass2, conc2, Om)
+    ut_r *= thetat(rm_ut, rt2, alpha) / mass2t * rhom
+    thetat_r = thetat(rm_thetat, Re, alpha)
 
-            g_at_u[i] = simps(f(rm), rm, even='first')
-            i += 1
-        integral[j] = 2 * np.pi * simps(g_at_u, u, even='first')
-        j += 1
+    ut_k = cluster_toolkit.xi.xi_mm_at_R(k, rm_ut, 8 * np.pi ** 3 * ut_r, N=500, step=0.00005)
 
-    return integral
+    thetat_k = cluster_toolkit.xi.xi_mm_at_R(k, rm_thetat, 8 * np.pi ** 3 * thetat_r, N=400, step=0.0001)
+
+    utconvthetat_r = cluster_toolkit.xi.xi_mm_at_R(r, k, ut_k * thetat_k)
+
+    return utconvthetat_r
 
 
 def utconvut(r, rt, conc):
