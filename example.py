@@ -1,6 +1,5 @@
 import numpy as np
 import xihm_exclusion
-import fastcorr
 from matplotlib import pyplot as plt
 from matplotlib.pyplot import rcParams
 rcParams['text.usetex'] = True
@@ -70,25 +69,24 @@ covxihm = np.loadtxt('data/covxihm1_2e14_5e14_z0.0_down10')
 r = np.loadtxt('data/r')
 
 # Parameters
+m = 10**14.48
 rt = 1.832
-m = 10**14.44
 c = 6.474
-alpha = 0.2955
+alpha = 0.18
+Delta = 0.25
 bias = 2.860
-ma = 10**14.45
-mb = 10**10.02
+ra = 1.8
+rb = 0.6
+Delta2 = 0.28
+reff = 1.6
+Deltaeff = 0.70
 
 
-# Get 2halo term, can be xilin, xinl, or ximm. Works better with ximm or xinl.
-# xilin = fastcorr.calc_corr(r, k, Plin, N=500000, h=1e-4)
-# xinl = fastcorr.calc_corr(r, k, Pnl, N=500000, h=1e-4)
+# Get ximm
 ximm = np.loadtxt('data/ximm_z0.0_down10')
-xi2h = ximm
-
 
 # Get model
-model = xihm_exclusion.xihm_model(r, rt, m, c, alpha, bias, ma, mb, xi2h, Om)
-
+model = xihm_exclusion.xihm_model(r, m, rt, c, alpha, Delta, bias, ra, rb, Delta2, ximm, reff, Deltaeff, Om)
 
 # Plot
 plt.errorbar(r, r * r * xihm, yerr=r * r * np.sqrt(covxihm.diagonal()), marker='o', linewidth=0, markersize=3, elinewidth=1, capsize=2, label=r'data', zorder=1)
@@ -102,8 +100,7 @@ plt.clf()
 plt.axhline(0., color='black')
 plt.semilogx(r, xihm/model - 1.)
 plt.fill_between(r, -np.sqrt(covxihm.diagonal())/xihm, np.sqrt(covxihm.diagonal())/xihm, color='grey',alpha=0.2, label=r'data', zorder=1)
-plt.ylim(-0.13, 0.05)
 plt.xlabel(r'$r$', fontsize=24)
 plt.ylabel(r'fractional difference', fontsize=24)
-plt.ylim(-0.15, 0.15)
+plt.ylim(-0.10, 0.10)
 plt.savefig('figs/fracdif_xihm.png')
